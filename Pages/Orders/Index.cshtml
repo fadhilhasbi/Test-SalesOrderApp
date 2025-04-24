@@ -1,0 +1,143 @@
+@page
+@model SalesOrderApp.Pages.Orders.IndexModel
+@{
+ViewData["Title"] = "Index of Sales Orders";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="container">
+
+    <form method="get">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Keywords" asp-for="SearchKeyword" />
+            </div>
+            <div class="col-md-4">
+                <input type="date" class="form-control" asp-for="OrderDate" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+            <div class="col-md-2 text-end">
+                <a asp-page="Create" class="btn btn-success">Add New Data</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="row mb-3">
+        <div class="col text-end">
+            <form method="post" asp-page-handler="Export">
+                <button type="submit" class="btn btn-secondary">Export To Excel</button>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Action</th>
+                <th>Sales Order</th>
+                <th>Order Date</th>
+                <th>Customer</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model.Orders)
+            {
+            <tr>
+                <td>@((Model.CurrentPage - 1) * Model.PageSize + Model.Orders.IndexOf(order) + 1)</td>
+                <td>
+                    <a asp-page="Edit" asp-route-id="@order.SO_ORDER_ID" class="btn btn-sm btn-primary">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('@order.SO_ORDER_ID')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+                <td>@order.ORDER_NO</td>
+                <td>@order.ORDER_DATE.ToString("dd/MM/yyyy")</td>
+                <td>@order.Customer?.CUSTOMER_NAME</td>
+            </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex justify-content-center">
+        <nav>
+            <ul class="pagination">
+                <li class="page-item @(Model.CurrentPage == 1 ? " disabled" : "" )">
+                    <a class="page-link" asp-route-currentpage="@(Model.CurrentPage - 1)"
+                        asp-route-searchkeyword="@Model.SearchKeyword"
+                        asp-route-orderdate="@(Model.OrderDate?.ToString(" yyyy-MM-dd"))">
+                        Previous
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= Model.TotalPages; i++) { <li class="page-item @(i == Model.CurrentPage ? " active"
+                    : "" )">
+                    <a class="page-link" asp-route-currentpage="@i" asp-route-searchkeyword="@Model.SearchKeyword"
+                        asp-route-orderdate="@(Model.OrderDate?.ToString(" yyyy-MM-dd"))">
+                        @i
+                    </a>
+                    </li>
+                    }
+
+                    <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? " disabled" : "" )">
+                        <a class="page-link" asp-route-currentpage="@(Model.CurrentPage + 1)"
+                            asp-route-searchkeyword="@Model.SearchKeyword"
+                            asp-route-orderdate="@(Model.OrderDate?.ToString(" yyyy-MM-dd"))">
+                            Next
+                        </a>
+                    </li>
+            </ul>
+        </nav>
+    </div>
+
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function confirmDelete(orderId, orderNo) {
+        console.log("orderID: ", orderId)
+        console.log("orderNo: ", orderNo)
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `You are about to delete order ${orderNo}. This action cannot be undone!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Perform the delete action
+                fetch(`/Orders/Delete?id=${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        Swal.fire(
+                            'Deleted!',
+                            'The order has been deleted.',
+                            'success'
+                        ).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            'There was a problem deleting the order.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
+    }
+</script>
+}

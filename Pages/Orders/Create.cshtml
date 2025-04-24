@@ -1,0 +1,133 @@
+@page
+@model SalesOrderApp.Pages.Orders.Create
+@{
+    ViewData["Title"] = "Add New - Sales Order";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div class="container">
+    
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label asp-for="Order.ORDER_NO" class="form-label">Sales Order Number *</label>
+                <input asp-for="Order.ORDER_NO" class="form-control" />
+                <span asp-validation-for="Order.ORDER_NO" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Order.ORDER_DATE" class="form-label">Order Date *</label>
+                <input type="date" asp-for="Order.ORDER_DATE" class="form-control" />
+                <span asp-validation-for="Order.ORDER_DATE" class="text-danger"></span>
+            </div>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label asp-for="Order.COM_CUSTOMER_ID" class="form-label">Customer *</label>
+                <select asp-for="Order.COM_CUSTOMER_ID" class="form-select" 
+                        asp-items="@(new SelectList(Model.Customers, "COM_CUSTOMER_ID", "CUSTOMER_NAME"))">
+                    <option value="">Select One</option>
+                </select>
+                <span asp-validation-for="Order.COM_CUSTOMER_ID" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Order.ADDRESS" class="form-label">Address</label>
+                <input asp-for="Order.ADDRESS" class="form-control" />
+                <span asp-validation-for="Order.ADDRESS" class="text-danger"></span>
+            </div>
+        </div>
+        
+        <hr />
+        
+        <h4>Detail Item Information</h4>
+        
+        <button type="submit" asp-page-handler="AddItem" class="btn btn-primary mb-3">Add Item</button>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Action</th>
+                    <th>Item Name</th>
+                    <th>QTY</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>
+                            <button type="submit" asp-page-handler="RemoveItem" 
+                                    asp-route-index="@i" class="btn btn-sm btn-danger">Delete</button>
+                        </td>
+                        <td>
+                            <input asp-for="@Model.Items[i].ITEM_NAME" class="form-control" />
+                            <span asp-validation-for="@Model.Items[i].ITEM_NAME" class="text-danger"></span>
+                        </td>
+                        <td>
+                            <input asp-for="@Model.Items[i].QUANTITY" class="form-control" 
+                                   onchange="calculateTotal(this)" />
+                            <span asp-validation-for="@Model.Items[i].QUANTITY" class="text-danger"></span>
+                        </td>
+                        <td>
+                            <input asp-for="@Model.Items[i].PRICE" class="form-control" 
+                                   onchange="calculateTotal(this)" />
+                            <span asp-validation-for="@Model.Items[i].PRICE" class="text-danger"></span>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control total-price" 
+                                   value="@(Model.Items[i].QUANTITY * Model.Items[i].PRICE)" readonly />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <h5>Total Item: <span id="totalItem">@Model.Items.Count</span></h5>
+            </div>
+            <div class="col-md-6">
+                <h5>Total Amount: <span id="totalAmount">@Model.Items.Sum(i => i.QUANTITY * i.PRICE)</span></h5>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col text-end">
+                <button type="submit" asp-page-handler="Save" class="btn btn-primary">Save</button>
+                <a asp-page="Index" class="btn btn-secondary">Close</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function calculateTotal(input) {
+            const row = input.closest('tr');
+            const quantity = parseFloat(row.querySelector('input[name*="QUANTITY"]').value) || 0;
+            const price = parseFloat(row.querySelector('input[name*="PRICE"]').value) || 0;
+            const total = quantity * price;
+            row.querySelector('.total-price').value = total.toLocaleString();
+            
+            updateTotals();
+        }
+        
+        function updateTotals() {
+            // Update total item count
+            document.getElementById('totalItem').textContent = document.querySelectorAll('tbody tr').length;
+            
+            // Update total amount
+            let totalAmount = 0;
+            document.querySelectorAll('.total-price').forEach(input => {
+                totalAmount += parseFloat(input.value.replace(/,/g, '')) || 0;
+            });
+            document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
+        }
+    </script>
+}
